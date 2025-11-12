@@ -4,7 +4,6 @@ import { toast } from "react-toastify";
 import { IoMdTrash } from "react-icons/io";
 import { MdOutlineEditNote } from "react-icons/md";
 
-
 const Home = () => {
   const [bookForm, setBookForm] = useState({
     bookName: "",
@@ -15,6 +14,20 @@ const Home = () => {
   });
 
   const [bookList, setBookList] = useState([]);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+
+  const resetForm = () => {
+    setBookForm({
+      bookName: "",
+      bookTitle: "",
+      author: "",
+      sellingPrice: "",
+      publishDate: "",
+    });
+    setIsUpdating(false);
+    setEditingId(null);
+  };
 
   const getAllBooksList = async () => {
     try {
@@ -31,35 +44,35 @@ const Home = () => {
 
   const handleSubmit = async () => {
     try {
-      if (
-        !bookForm.bookName ||
-        !bookForm.bookTitle ||
-        !bookForm.author ||
-        !bookForm.sellingPrice ||
-        !bookForm.publishDate
-      ) {
+      const { bookName, bookTitle, author, sellingPrice, publishDate } = bookForm;
+
+      if (!bookName || !bookTitle || !author || !sellingPrice || !publishDate) {
         toast.error("All fields are required");
         return;
       }
 
       const payload = {
         ...bookForm,
-        sellingPrice: Number(bookForm.sellingPrice),
+        sellingPrice: Number(sellingPrice),
       };
 
-      const { data } = await bookBaseUrl.post("/add", payload);
-      if (data?.success) {
-        toast.success(data?.message);
-        await getAllBooksList();
+      let res;
+      if (isUpdating && editingId) {
+        // UPDATE
+        res = await bookBaseUrl.put("/update", { id: editingId, ...payload });
+      } else {
+        // ADD
+        res = await bookBaseUrl.post("/add", payload);
       }
 
-      setBookForm({
-        bookName: "",
-        bookTitle: "",
-        author: "",
-        sellingPrice: "",
-        publishDate: "",
-      });
+      const { data } = res || {};
+      if (data?.success) {
+        toast.success(data?.message || (isUpdating ? "Book updated successfully" : "Book added successfully"));
+        await getAllBooksList();
+        resetForm();
+      } else {
+        toast.error(data?.message || "Operation failed");
+      }
     } catch (error) {
       toast.error(error.message);
     }
@@ -71,15 +84,33 @@ const Home = () => {
       if (data?.success) {
         toast.success(data?.message);
         await getAllBooksList();
+        // If you deleted the item being edited, exit edit mode
+        if (editingId === id) resetForm();
+      } else {
+        toast.error(data?.message || "Delete failed");
       }
     } catch (error) {
       toast.error(error.message);
     }
   };
 
+  const handleUpdate = (book) => {
+    // Prefill the form and switch to update mode
+    setBookForm({
+      bookName: book.bookName || "",
+      bookTitle: book.bookTitle || "",
+      author: book.author || "",
+      sellingPrice: String(book.sellingPrice ?? ""),
+      // Ensure the date input gets yyyy-mm-dd
+      publishDate: book.publishDate ? new Date(book.publishDate).toISOString().slice(0, 10) : "",
+    });
+    setEditingId(book._id);
+    setIsUpdating(true);
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setBookForm({ ...bookForm, [name]: value });
+    setBookForm((prev) => ({ ...prev, [name]: value }));
   };
 
   return (
@@ -147,12 +178,23 @@ const Home = () => {
         </div>
       </div>
 
-      <div className="w-full flex justify-end">
+      <div className="w-full flex items-center justify-end gap-3">
+        {isUpdating && (
+          <button
+            onClick={resetForm}
+            className="bg-gray-300 h-10 px-4 rounded-md cursor-pointer hover:bg-gray-400 text-gray-800"
+            type="button"
+          >
+            Cancel
+          </button>
+        )}
         <button
           onClick={handleSubmit}
-          className="bg-green-500 h-10 w-24 rounded-md cursor-pointer hover:bg-green-600 text-white"
+          className={`h-10 w-28 rounded-md cursor-pointer text-white ${
+            isUpdating ? "bg-blue-500 hover:bg-blue-600" : "bg-green-500 hover:bg-green-600"
+          }`}
         >
-          Submit
+          {isUpdating ? "Update" : "Submit"}
         </button>
       </div>
 
@@ -195,8 +237,8 @@ const Home = () => {
                           </button>
                           <button
                             className="flex items-center cursor-pointer hover:text-green-600"
-                            onClick={() => handleUpdate(book._id)}
-                            aria-label="Delete"
+                            onClick={() => handleUpdate(book)}
+                            aria-label="Edit"
                           >
                             <MdOutlineEditNote className="h-6 w-6" />
                           </button>
@@ -206,10 +248,7 @@ const Home = () => {
                   ))
                 ) : (
                   <tr>
-                    <td
-                      colSpan={6}
-                      className="text-center text-gray-500 py-10 font-semibold text-lg bg-gray-50"
-                    >
+                    <td colSpan={6} className="text-center text-gray-500 py-10 font-semibold text-lg bg-gray-50">
                       📚 No Books Found
                     </td>
                   </tr>

@@ -1,4 +1,5 @@
 import Book from '../models/Book.js';
+import mongoose from 'mongoose';
 
 const addBook = async (req, res) => {
     try {
@@ -44,7 +45,45 @@ const deleteBook = async (req, res) => {
     }
 }
 
+const updateBook = async (req, res) => {
+  try {
+    const { id, ...updateData } = req.body;
+    console.log("Updating ID:", id);
+    console.log("Update Data:", updateData);
+
+    const updatingBook = await Book.updateOne(
+      { _id: id },
+      { $set: updateData }
+    );
+
+    if (!id) {
+      return res.status(400).json({ success: false, message: "Book id is required" });
+    }
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: "Invalid book id" });
+    }
+
+    console.log("Updating:", updatingBook);
+
+    if (updatingBook.acknowledged) {
+      return res.json({
+        message: "Book updated successfully",
+        success: true,
+      });
+    } else {
+      return res.json({
+        message: "Book update failed",
+        success: false,
+      });
+    }
+  } catch (error) {
+    return res.status(400).json({
+      message: error.message,
+      success: false,
+    });
+  }
+};
 
 
-export {addBook , listBooks ,deleteBook}
+export {addBook , listBooks ,deleteBook, updateBook};
 
