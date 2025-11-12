@@ -29,5 +29,22 @@ const listBooks = async (req, res) => {
     }
 }
 
-export {addBook , listBooks}
+const deleteBook = async (req, res) => {
+    const {id} = req.body
+    try {
+        
+        const deletedBook = await Book.deleteOne({_id: id});
+        console.log("Deleted:", deletedBook)
+
+        if(deletedBook.acknowledged){
+            return res.json({message: "Book deleted Successfully", success: true});
+        }
+    } catch (error) {
+        return res.status(400).json({message: error.message, success: false})
+    }
+}
+
+
+
+export {addBook , listBooks ,deleteBook}
 

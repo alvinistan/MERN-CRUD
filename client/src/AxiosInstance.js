@@ -1,5 +1,5 @@
 import axios from "axios";
 
 export const bookBaseUrl = axios.create({
-    baseURL: "http://localhost:5000/api/book",
+    baseURL: "http://localhost:5000/api/books",
 });
