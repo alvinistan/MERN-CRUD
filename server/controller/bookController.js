@@ -45,16 +45,9 @@ const deleteBook = async (req, res) => {
     }
 }
 
-const updateBook = async (req, res) => {
+export const updateBook = async (req, res) => {
   try {
     const { id, ...updateData } = req.body;
-    console.log("Updating ID:", id);
-    console.log("Update Data:", updateData);
-
-    const updatingBook = await Book.updateOne(
-      { _id: id },
-      { $set: updateData }
-    );
 
     if (!id) {
       return res.status(400).json({ success: false, message: "Book id is required" });
@@ -63,26 +56,26 @@ const updateBook = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid book id" });
     }
 
-    console.log("Updating:", updatingBook);
-
-    if (updatingBook.acknowledged) {
-      return res.json({
-        message: "Book updated successfully",
-        success: true,
-      });
-    } else {
-      return res.json({
-        message: "Book update failed",
-        success: false,
-      });
+    // Optional: normalize types
+    if (updateData.sellingPrice !== undefined) {
+      updateData.sellingPrice = Number(updateData.sellingPrice);
     }
+
+    const result = await Book.updateOne({ _id: id }, { $set: updateData });
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ success: false, message: "Book not found" });
+    }
+
+    const message = result.modifiedCount
+      ? "Book updated successfully"
+      : "No changes detected";
+    return res.json({ success: true, message });
   } catch (error) {
-    return res.status(400).json({
-      message: error.message,
-      success: false,
-    });
+    return res.status(400).json({ success: false, message: error.message });
   }
 };
+
 
 
 export {addBook , listBooks ,deleteBook, updateBook};
