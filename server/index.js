@@ -76,7 +76,7 @@ app.get(
   }
 );
 
-app.use('/api/book', bookRoutes);
+app.use('/api/books', bookRoutes);
 
 // Example: Protected route to get current user
 app.get("/me", (req, res) => {

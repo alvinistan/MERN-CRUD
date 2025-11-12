@@ -11,7 +11,7 @@ const addBook = async (req, res) => {
         const bookAdd = await Book.insertOne(body);
         console.log(bookAdd);
         if(bookAdd){
-            return res.status(201).json({message: "Book added successfully", success: true});
+            return res.status(201).json({message: "Book added successfully", success: true, Id: bookAdd?._id});
         }else{
             return res.status(400).json({message: "Failed to add book", success: false});
         }
@@ -20,5 +20,14 @@ const addBook = async (req, res) => {
     }
 }
 
-export default addBook;
+const listBooks = async (req, res) => {
+    try {
+        const bookList = await Book.find({});
+        return res.status(200).json({message: "Books fetched successfully", success: true, totalCount: bookList.length,data: bookList})
+    } catch (error) {
+        return res.status(500).json({message: error.message, success: false})
+    }
+}
+
+export {addBook , listBooks}
 
