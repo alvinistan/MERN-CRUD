@@ -7,6 +7,8 @@ import jwt from "jsonwebtoken";
 import session from "express-session";
 import passport from "passport";
 import "./config/passport.js";
+import connectDB from "./database/db.js";
+import bookRoutes from "./routes/bookRoutes.js";
 
 dotenv.config();
 
@@ -37,11 +39,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // MongoDB connect
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.log(err));
-
+connectDB()
 // ---------- AUTH ROUTES ----------
 
 // Step 1: Redirect user to Google
@@ -77,6 +75,8 @@ app.get(
     res.redirect(`${process.env.CLIENT_URL}/dashboard`);
   }
 );
+
+app.use('/api/book', bookRoutes);
 
 // Example: Protected route to get current user
 app.get("/me", (req, res) => {
